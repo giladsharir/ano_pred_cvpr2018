@@ -34,8 +34,9 @@ def parser_args():
     parser.add_argument('--test_folder', type=str, default='',
                         help='set the testing folder path.')
 
-    parser.add_argument('--config', type=str, default='training_hyper_params/hyper_params.ini',
-                        help='the path of training_hyper_params, default is training_hyper_params/hyper_params.ini')
+    parser.add_argument('--config', type=str, default='Codes/training_hyper_params/hyper_params.ini',
+                        help='the path of training_hyper_params, default is '
+                             'Codes/training_hyper_params/hyper_params.ini')
 
     parser.add_argument('--snapshot_dir', type=str, default='',
                         help='if it is folder, then it is the directory to save models, '
@@ -92,7 +93,7 @@ const.EVALUATE = args.evaluate
 # network constants
 const.HEIGHT = 256
 const.WIDTH = 256
-const.FLOWNET_CHECKPOINT = 'checkpoints/pretrains/flownet-SD.ckpt-0'
+const.FLOWNET_CHECKPOINT = 'Codes/checkpoints/pretrains/flownet-SD.ckpt-0'
 const.FLOW_HEIGHT = 384
 const.FLOW_WIDTH = 512
 
