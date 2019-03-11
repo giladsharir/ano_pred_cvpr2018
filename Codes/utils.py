@@ -9,7 +9,7 @@ import cv2
 rng = np.random.RandomState(2017)
 
 
-def np_load_frame(filename, resize_height, resize_width):
+def np_load_frame(frame, resize_height, resize_width):
     """
     Load image path and convert it to numpy.ndarray. Notes that the color channels are BGR and the color space
     is normalized from [0, 255] to [-1, 1].
@@ -19,8 +19,12 @@ def np_load_frame(filename, resize_height, resize_width):
     :param resize_width: resized width
     :return: numpy.ndarray
     """
-    image_decoded = cv2.imread(filename)
-    image_resized = cv2.resize(image_decoded, (resize_width, resize_height))
+    # image_decoded = cv2.imread(filename)
+    # image_resized = cv2.resize(frame, (resize_width, resize_height))
+    # print("image resize start {}".format(frame.shape[0]))
+
+    # image_resized = np.zeros_like(frame)
+    image_resized = cv2.resize(frame, (resize_width, resize_height))
     image_resized = image_resized.astype(dtype=np.float32)
     image_resized = (image_resized / 127.5) - 1.0
     return image_resized
@@ -47,12 +51,25 @@ class DataLoader(object):
                 v_id = (v_id + 1) % num_videos
 
                 video_info = video_info_list[v_id]
-                start = rng.randint(0, video_info['length'] - clip_length)
+
+                cap = cv2.VideoCapture(video_info['path'])
+                vid_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                # print("vid: {} - {} - {}".format(video_info['path'], vid_length, resize_width))
+
+                # fps = int(cap.get(cv2.CAP_PROP_FPS))
+                start = rng.randint(0, vid_length - clip_length)
+                cap.set(cv2.CAP_PROP_POS_FRAMES, start)
+                # print("starting from frame: {}".format(start))
                 video_clip = []
                 for frame_id in range(start, start + clip_length):
-                    video_clip.append(np_load_frame(video_info['frame'][frame_id], resize_height, resize_width))
+                    ret, frame = cap.read()
+                    if ret:
+                        frame_resize = np_load_frame(frame, resize_height, resize_width)
+                        # print("vid: {} read complete".format(video_info['path']))
+                        video_clip.append(frame_resize)
+                    else:
+                        print('frame not loaded')
                 video_clip = np.concatenate(video_clip, axis=2)
-
                 yield video_clip
 
         # video clip paths
@@ -71,14 +88,23 @@ class DataLoader(object):
         return self.videos[video_name]
 
     def setup(self):
-        videos = glob.glob(os.path.join(self.dir, '*'))
+        # videos = glob.glob(os.path.join(self.dir, '*'))
+        videos = []
+        for c_dir in os.listdir(self.dir):
+            if not os.path.isdir(os.path.join(self.dir, c_dir)):
+                continue
+            for vid in os.listdir(os.path.join(self.dir, c_dir)):
+                videos.append(os.path.join(c_dir, vid))
+
         for video in sorted(videos):
             video_name = video.split('/')[-1]
+
             self.videos[video_name] = {}
-            self.videos[video_name]['path'] = video
-            self.videos[video_name]['frame'] = glob.glob(os.path.join(video, '*.jpg'))
-            self.videos[video_name]['frame'].sort()
-            self.videos[video_name]['length'] = len(self.videos[video_name]['frame'])
+            self.videos[video_name]['path'] = os.path.join(self.dir,video)
+            # self.videos[video_name]['length'] =
+            # self.videos[video_name]['frame'] = glob.glob(os.path.join(video, '*.jpg'))
+            # self.videos[video_name]['frame'].sort()
+            # self.videos[video_name]['length'] = len(self.videos[video_name]['frame'])
 
     def get_video_clips(self, video, start, end):
         # assert video in self.videos, 'video = {} must in {}!'.format(video, self.videos.keys())
