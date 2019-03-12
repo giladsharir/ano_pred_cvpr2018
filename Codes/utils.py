@@ -5,6 +5,7 @@ import os, inspect
 import glob
 import cv2
 from meaningful_splits import splits, ntu_splits
+from kinetics_labels import get_kinetics_names
 
 rng = np.random.RandomState(2017)
 
@@ -60,12 +61,13 @@ def np_load_frame(frame, resize_height, resize_width):
 
 
 class DataLoader(object):
-    def __init__(self, video_folder, split, resize_height=256, resize_width=256):
+    def __init__(self, video_folder, split, phase, resize_height=256, resize_width=256):
         self.dir = video_folder
         self.videos = OrderedDict()
         self._resize_height = resize_height
         self._resize_width = resize_width
         self._split = split
+        self._phase = phase
         self.setup()
 
     def __call__(self, batch_size, time_steps, num_pred=1):
@@ -125,12 +127,21 @@ class DataLoader(object):
         # videos = glob.glob(os.path.join(self.dir, '*'))
         videos = []
         normal_classes, abnorm_classes = get_exp_classes(self._split)
-        c_names = [dir for dir in next(os.walk(self.dir))[1]]
-        for c_idx, c_dir in enumerate(sorted(c_names)):
+        # c_names = [dir for dir in next(os.walk(self.dir))[1]]
+
+        c_names = get_kinetics_names()
+
+        for c_idx, c_dir in enumerate(c_names):
             # if not os.path.isdir(os.path.join(self.dir, c_dir)):
             #     continue
-            if not c_idx in normal_classes:
-                continue
+            #todo: don't skip the abnormal videos for validation/test mode
+            if self._phase == 'train':
+                if not c_idx in normal_classes:
+                    continue
+            elif self._phase == 'test':
+                if (not c_idx in normal_classes) and (not c_idx in abnorm_classes):
+                    continue
+
             for vid in os.listdir(os.path.join(self.dir, c_dir)):
                 videos.append(os.path.join(c_dir, vid))
 
