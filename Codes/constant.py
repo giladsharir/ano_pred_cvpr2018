@@ -46,6 +46,8 @@ def parser_args():
 
     parser.add_argument('--evaluate', type=str, default='compute_auc',
                         help='the evaluation metric, default is compute_auc')
+    parser.add_argument('-s', '--split', type=str, default='lifters',
+                        help='split of the data abnormal/normal.')
 
     return parser.parse_args()
 
@@ -81,6 +83,8 @@ const = Const()
 const.DATASET = args.dataset
 const.TRAIN_FOLDER = args.train_folder
 const.TEST_FOLDER = args.test_folder
+
+const.SPLIT = args.split
 
 const.GPU = args.gpu
 

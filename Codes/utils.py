@@ -1,13 +1,42 @@
 import tensorflow as tf
 import numpy as np
 from collections import OrderedDict
-import os
+import os, inspect
 import glob
 import cv2
-
+from meaningful_splits import splits, ntu_splits
 
 rng = np.random.RandomState(2017)
 
+def np_del_by_val_1d(arr, *del_arrs):
+    ret = np.array(arr)
+    for del_arr in del_arrs:
+        ret = np.delete(ret, [i for i in range(ret.shape[0]) if ret[i] in del_arr])
+    return ret
+
+
+def get_exp_classes(split_name, m=250, ntu=False):
+    # NTU only removes non-normal classes from the 60, Kinetics filters by sorted success threshold
+    if isinstance(split_name, (list, tuple, np.ndarray, np.generic)):
+        normal_classes = list(split_name)
+    else:
+        if ntu:
+            normal_classes = ntu_splits[split_name]
+        else:
+            normal_classes = splits[split_name]
+    if ntu:
+        abnormal_classes = np_del_by_val_1d(list(range(60)), normal_classes)
+        return normal_classes, abnormal_classes
+    # currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    # parentdir = os.path.dirname(currentdir)
+    # class_acc_path = os.path.join(parentdir, 'csv/class_accuracy_np.npy')
+    class_acc_path = 'csv/class_accuracy_np.npy'
+    class_acc_np = np.load(class_acc_path)
+    class_num = class_acc_np.shape[0]
+    unusable_classes = class_acc_np[m:, 0].astype(int)
+    normal_classes = np_del_by_val_1d(normal_classes, unusable_classes)
+    abnormal_classes = np_del_by_val_1d(np.arange(class_num), normal_classes, unusable_classes)
+    return normal_classes, abnormal_classes
 
 def np_load_frame(frame, resize_height, resize_width):
     """
@@ -31,17 +60,19 @@ def np_load_frame(frame, resize_height, resize_width):
 
 
 class DataLoader(object):
-    def __init__(self, video_folder, resize_height=256, resize_width=256):
+    def __init__(self, video_folder, split, resize_height=256, resize_width=256):
         self.dir = video_folder
         self.videos = OrderedDict()
         self._resize_height = resize_height
         self._resize_width = resize_width
+        self._split = split
         self.setup()
 
     def __call__(self, batch_size, time_steps, num_pred=1):
         video_info_list = list(self.videos.values())
         num_videos = len(video_info_list)
 
+        print("number of videos {}".format(num_videos))
         clip_length = time_steps + num_pred
         resize_height, resize_width = self._resize_height, self._resize_width
 
@@ -55,9 +86,12 @@ class DataLoader(object):
                 cap = cv2.VideoCapture(video_info['path'])
                 vid_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                 # print("vid: {} - {} - {}".format(video_info['path'], vid_length, resize_width))
+                if not vid_length:
+                    continue
 
                 # fps = int(cap.get(cv2.CAP_PROP_FPS))
                 start = rng.randint(0, vid_length - clip_length)
+                # start = 0
                 cap.set(cv2.CAP_PROP_POS_FRAMES, start)
                 # print("starting from frame: {}".format(start))
                 video_clip = []
@@ -77,8 +111,8 @@ class DataLoader(object):
                                                  output_types=tf.float32,
                                                  output_shapes=[resize_height, resize_width, clip_length * 3])
         print('generator dataset, {}'.format(dataset))
-        dataset = dataset.prefetch(buffer_size=1000)
-        dataset = dataset.shuffle(buffer_size=1000).batch(batch_size)
+        dataset = dataset.prefetch(buffer_size=500)
+        dataset = dataset.shuffle(buffer_size=500).batch(batch_size)
         print('epoch dataset, {}'.format(dataset))
 
         return dataset
@@ -90,8 +124,12 @@ class DataLoader(object):
     def setup(self):
         # videos = glob.glob(os.path.join(self.dir, '*'))
         videos = []
-        for c_dir in os.listdir(self.dir):
-            if not os.path.isdir(os.path.join(self.dir, c_dir)):
+        normal_classes, abnorm_classes = get_exp_classes(self._split)
+        c_names = [dir for dir in next(os.walk(self.dir))[1]]
+        for c_idx, c_dir in enumerate(sorted(c_names)):
+            # if not os.path.isdir(os.path.join(self.dir, c_dir)):
+            #     continue
+            if not c_idx in normal_classes:
                 continue
             for vid in os.listdir(os.path.join(self.dir, c_dir)):
                 videos.append(os.path.join(c_dir, vid))
