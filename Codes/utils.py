@@ -78,7 +78,7 @@ class DataLoader(object):
         clip_length = time_steps + num_pred
         resize_height, resize_width = self._resize_height, self._resize_width
 
-        def video_clip_generator():
+        def train_video_clip_generator():
             v_id = -1
             while True:
                 v_id = (v_id + 1) % num_videos
@@ -86,7 +86,8 @@ class DataLoader(object):
                 video_info = video_info_list[v_id]
 
                 cap = cv2.VideoCapture(video_info['path'])
-                vid_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                # vid_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                vid_length = video_info['length']
                 # print("vid: {} - {} - {}".format(video_info['path'], vid_length, resize_width))
                 if not vid_length:
                     continue
@@ -108,10 +109,59 @@ class DataLoader(object):
                 video_clip = np.concatenate(video_clip, axis=2)
                 yield video_clip
 
+        def test_video_clip_generator():
+            v_id = -1
+            while v_id < num_videos:
+
+                v_id = (v_id + 1)
+                video_info = video_info_list[v_id]
+                cap = cv2.VideoCapture(video_info['path'])
+                vid_length = video_info['length']
+
+                if not vid_length:
+                    continue
+
+                frame_id = -1
+                while frame_id < vid_length:
+                    frame_id += 1
+
+
+                    # print("vid: {} - {} - {}".format(video_info['path'], vid_length, resize_width))
+                    video_clip_buffer = []
+                    # while frame_id < clip_length:
+
+                    ret, frame = cap.read()
+                    video_clip_buffer.append(np_load_frame(frame, resize_height, resize_width))
+
+                    if frame_id < clip_length:
+                        continue
+
+                    video_clip = np.concatenate(video_clip_buffer, axis=2)
+                    video_clip_buffer.pop(0)
+                    # cap.set(cv2.CAP_PROP_POS_FRAMES, start)
+                    # print("starting from frame: {}".format(start))
+                    # video_clip = []
+                    # for frame_id in range(frame_id - clip_length, frame_id + 1):
+                    #     ret, frame = cap.read()
+                    #     if ret:
+                    #         frame_resize = np_load_frame(frame, resize_height, resize_width)
+                    #         # print("vid: {} read complete".format(video_info['path']))
+                    #         video_clip.append(frame_resize)
+                    #     else:
+                    #         print('frame not loaded')
+                    # video_clip = np.concatenate(video_clip, axis=2)
+                    yield video_clip
+
         # video clip paths
-        dataset = tf.data.Dataset.from_generator(generator=video_clip_generator,
-                                                 output_types=tf.float32,
-                                                 output_shapes=[resize_height, resize_width, clip_length * 3])
+        if self._phase == 'train':
+            dataset = tf.data.Dataset.from_generator(generator=train_video_clip_generator,
+                                                     output_types=tf.float32,
+                                                     output_shapes=[resize_height, resize_width, clip_length * 3])
+        else:
+            dataset = tf.data.Dataset.from_generator(generator=test_video_clip_generator,
+                                                     output_types=tf.float32,
+                                                     output_shapes=[resize_height, resize_width, clip_length * 3])
+
         print('generator dataset, {}'.format(dataset))
         dataset = dataset.prefetch(buffer_size=500)
         dataset = dataset.shuffle(buffer_size=500).batch(batch_size)
@@ -144,7 +194,6 @@ class DataLoader(object):
 
             for vid in os.listdir(os.path.join(self.dir, c_dir)):
                 videos.append(os.path.join(c_dir, vid))
-
         for video in sorted(videos):
             video_name = video.split('/')[-1]
 
@@ -153,19 +202,46 @@ class DataLoader(object):
             # self.videos[video_name]['length'] =
             # self.videos[video_name]['frame'] = glob.glob(os.path.join(video, '*.jpg'))
             # self.videos[video_name]['frame'].sort()
-            # self.videos[video_name]['length'] = len(self.videos[video_name]['frame'])
+            cap = cv2.VideoCapture(self.videos[video_name]['path'])
+            vid_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            cap.release()
+            self.videos[video_name]['length'] = vid_length
+        print("number of videos {}".format(len(self.videos)))
+
 
     def get_video_clips(self, video, start, end):
         # assert video in self.videos, 'video = {} must in {}!'.format(video, self.videos.keys())
         # assert start >= 0, 'start = {} must >=0!'.format(start)
         # assert end <= self.videos[video]['length'], 'end = {} must <= {}'.format(video, self.videos[video]['length'])
+        video_info = self.videos[video]
+        cap = cv2.VideoCapture(video_info['path'])
+        vid_length = video_info['length']
+        # print("vid: {} - {} - {}".format(video_info['path'], vid_length, resize_width))
+        if not vid_length:
+            return None
 
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start)
+        # print("starting from frame: {}".format(start))
         batch = []
-        for i in range(start, end):
-            image = np_load_frame(self.videos[video]['frame'][i], self._resize_height, self._resize_width)
-            batch.append(image)
-
+        for frame_id in range(start, end):
+            ret, frame = cap.read()
+            if ret:
+                frame_resize = np_load_frame(frame, self._resize_height, self._resize_width)
+                # print("vid: {} read complete".format(video_info['path']))
+                batch.append(frame_resize)
+            else:
+                print('frame not loaded')
         return np.concatenate(batch, axis=2)
+        # yield video_clip
+
+
+        #
+        # batch = []
+        # for i in range(start, end):
+        #     image = np_load_frame(self.videos[video]['frame'][i], self._resize_height, self._resize_width)
+        #     batch.append(image)
+        #
+        # return np.concatenate(batch, axis=2)
 
 
 def log10(t):
