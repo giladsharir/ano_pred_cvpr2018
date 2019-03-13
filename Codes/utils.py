@@ -115,6 +115,7 @@ class DataLoader(object):
 
                 v_id = (v_id + 1)
                 video_info = video_info_list[v_id]
+                print("processing vid {}".format(video_info['path']))
                 cap = cv2.VideoCapture(video_info['path'])
                 vid_length = video_info['length']
 
@@ -122,20 +123,27 @@ class DataLoader(object):
                     continue
 
                 frame_id = -1
-                while frame_id < vid_length:
-                    frame_id += 1
+                video_clip_buffer = []
+
+                while frame_id < vid_length-1:
 
 
                     # print("vid: {} - {} - {}".format(video_info['path'], vid_length, resize_width))
-                    video_clip_buffer = []
                     # while frame_id < clip_length:
 
                     ret, frame = cap.read()
+                    # if ret:
+                    frame_id += 1
                     video_clip_buffer.append(np_load_frame(frame, resize_height, resize_width))
+                    # else:
+                    #     video_clip_buffer.append(np.zeros((resize_height, resize_width, 3)))
 
-                    if frame_id < clip_length:
+                        # print("frame skipped")
+
+                    if frame_id < clip_length-1:
                         continue
 
+                    # print('frame id {}'.format(frame_id))
                     video_clip = np.concatenate(video_clip_buffer, axis=2)
                     video_clip_buffer.pop(0)
                     # cap.set(cv2.CAP_PROP_POS_FRAMES, start)

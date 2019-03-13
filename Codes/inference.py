@@ -86,25 +86,28 @@ with tf.Session(config=config) as sess:
         timestamp = time.time()
 
         for video_name, video in tqdm(videos_info.items()):
+
             length = video['length']
             total += length
             psnrs = np.empty(shape=(length,), dtype=np.float32)
 
+            print('video = {}, {}'.format(video_name, length))
+
 
 
             for i in range(num_his, length):
-                try:
+                # try:
                     # video_clip = data_loader.get_video_clips(video_name, i - num_his, i + 1)
                     # psnr = sess.run(test_psnr_error,
                     #                 feed_dict={test_video_clips_tensor: video_clip[np.newaxis, ...]})
-                    psnr = sess.run(test_psnr_error)
-                    psnrs[i] = psnr
+                psnr = sess.run(test_psnr_error)
+                psnrs[i] = psnr
 
-                    # print('video = {} / {}, i = {} / {}, psnr = {:.6f}'.format(
-                    #     video_name, num_videos, i, length, psnr))
+                # print('video = {} / {}, i = {} / {}, psnr = {:.6f}'.format(
+                #     video_name, num_videos, i, length, psnr))
 
-                except:
-                    print("video not loaded {}".format(video_name))
+                # except:
+                #     print("video not loaded {}".format(video_name))
 
             psnrs[0:num_his] = psnrs[num_his]
             psnr_records.append(psnrs)
