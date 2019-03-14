@@ -113,7 +113,7 @@ class DataLoader(object):
 
         def test_video_clip_generator():
             v_id = -1
-            while v_id < num_videos:
+            while v_id < num_videos-1:
 
                 v_id = (v_id + 1)
                 video_info = video_info_list[v_id]

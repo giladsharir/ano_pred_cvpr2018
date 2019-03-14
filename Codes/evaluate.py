@@ -500,9 +500,12 @@ def calculate_score(loss_file):
         distance = psnr_records[i]
 
         distance = (distance - distance.min()) / (distance.max() - distance.min())
-
+        #todo: save distance as npz with video name
         scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
         labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
+
+    file_name = loss_file_path+".npz"
+    np.savez(file_name, scores=scores)
 
     mean_normal_scores = np.mean(scores[labels == 0])
     mean_abnormal_scores = np.mean(scores[labels == 1])
