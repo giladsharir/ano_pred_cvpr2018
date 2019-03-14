@@ -495,15 +495,17 @@ def calculate_score(loss_file):
     # the number of videos
     num_videos = len(psnr_records)
 
-    scores = np.array([], dtype=np.float32)
-    labels = np.array([], dtype=np.int8)
+    scores = []
+    # scores = np.array([], dtype=np.float32)
+    # labels = np.array([], dtype=np.int8)
     # video normalization
     for i in range(num_videos):
         distance = psnr_records[i]
 
         distance = (distance - distance.min()) / (distance.max() - distance.min())
         #todo: save distance as npz with video name
-        scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
+        # scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
+        scores.append(distance[DECIDABLE_IDX:])
         # labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
 
     file_name = loss_file_path+".npz"
