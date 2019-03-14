@@ -261,6 +261,7 @@ def load_psnr_gt(loss_file):
     return dataset, psnr_records, gt
 
 
+
 def load_psnr_gt_flow(loss_file):
     with open(loss_file, 'rb') as reader:
         # results {
@@ -488,7 +489,8 @@ def calculate_score(loss_file):
         optical_result = compute_auc(loss_file)
         loss_file_path = optical_result.loss_file
         print('##### optimal result and model = {}'.format(optical_result))
-    dataset, psnr_records, gt = load_psnr_gt(loss_file=loss_file_path)
+    # dataset, psnr_records, gt = load_psnr_gt(loss_file=loss_file_path)
+    psnr_records= load_psnr(loss_file=loss_file_path)
 
     # the number of videos
     num_videos = len(psnr_records)
@@ -502,15 +504,15 @@ def calculate_score(loss_file):
         distance = (distance - distance.min()) / (distance.max() - distance.min())
         #todo: save distance as npz with video name
         scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
-        labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
+        # labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
 
     file_name = loss_file_path+".npz"
     np.savez(file_name, scores=scores)
 
-    mean_normal_scores = np.mean(scores[labels == 0])
-    mean_abnormal_scores = np.mean(scores[labels == 1])
-    print('mean normal scores = {}, mean abnormal scores = {}, '
-          'delta = {}'.format(mean_normal_scores, mean_abnormal_scores, mean_normal_scores - mean_abnormal_scores))
+    # mean_normal_scores = np.mean(scores[labels == 0])
+    # mean_abnormal_scores = np.mean(scores[labels == 1])
+    # print('mean normal scores = {}, mean abnormal scores = {}, '
+    #       'delta = {}'.format(mean_normal_scores, mean_abnormal_scores, mean_normal_scores - mean_abnormal_scores))
 
 
 def test_func(*args):
