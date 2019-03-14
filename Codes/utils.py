@@ -61,13 +61,15 @@ def np_load_frame(frame, resize_height, resize_width):
 
 
 class DataLoader(object):
-    def __init__(self, video_folder, split, phase, resize_height=256, resize_width=256):
+    def __init__(self, video_folder, split, phase, inv_exp, resize_height=256, resize_width=256):
         self.dir = video_folder
         self.videos = OrderedDict()
         self._resize_height = resize_height
         self._resize_width = resize_width
         self._split = split
         self._phase = phase
+
+        self._inv = inv_exp
         self.setup()
 
     def __call__(self, batch_size, time_steps, num_pred=1):
@@ -192,13 +194,18 @@ class DataLoader(object):
         for c_idx, c_dir in enumerate(c_names):
             # if not os.path.isdir(os.path.join(self.dir, c_dir)):
             #     continue
-            #todo: don't skip the abnormal videos for validation/test mode
-            if self._phase == 'train':
-                if not c_idx in normal_classes:
-                    continue
-            elif self._phase == 'test':
+
+            if self._phase == 'test':
                 if (not c_idx in normal_classes) and (not c_idx in abnorm_classes):
                     continue
+            elif self._phase == 'train':
+                if self._inv:
+                    if not c_idx in abnorm_classes:
+                        continue
+                else:
+                    # if self._phase == 'train':
+                    if not c_idx in normal_classes:
+                        continue
 
             for vid in os.listdir(os.path.join(self.dir, c_dir)):
                 videos.append(os.path.join(c_dir, vid))

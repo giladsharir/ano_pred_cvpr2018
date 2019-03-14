@@ -1,6 +1,7 @@
 import os
 import argparse
 import configparser
+import time
 
 
 def get_dir(directory):
@@ -48,6 +49,8 @@ def parser_args():
                         help='the evaluation metric, default is compute_auc')
     parser.add_argument('-s', '--split', type=str, default='lifters',
                         help='split of the data abnormal/normal.')
+    parser.add_argument('--inverse_exp', action='store_true',
+                        help='Conduct inverse experiment (245-v-5 / 55-v-5) instead of standard. (default: False)')
 
     return parser.parse_args()
 
@@ -94,6 +97,11 @@ const.ITERATIONS = args.iters
 
 const.EVALUATE = args.evaluate
 
+if args.inverse_exp:
+  const.INV_EXP = True
+else:
+  const.INV_EXP = False
+
 # network constants
 const.HEIGHT = 256
 const.WIDTH = 256
@@ -126,13 +134,15 @@ const.LRATE_G_BOUNDARIES = eval(config.get(const.DATASET, 'LRATE_G_BOUNDARIES'))
 const.LRATE_D = eval(config.get(const.DATASET, 'LRATE_D'))
 const.LRATE_D_BOUNDARIES = eval(config.get(const.DATASET, 'LRATE_D_BOUNDARIES'))
 
+time_str = time.strftime("%b%d_%H%M")
 
 const.SAVE_DIR = '{dataset}_l_{L_NUM}_alpha_{ALPHA_NUM}_lp_{LAM_LP}_' \
-                 'adv_{LAM_ADV}_gdl_{LAM_GDL}_flow_{LAM_FLOW}'.format(dataset=const.DATASET,
+                 'adv_{LAM_ADV}_gdl_{LAM_GDL}_flow_{LAM_FLOW}_split_{SPLT}_time_{TIME}'.format(dataset=const.DATASET,
                                                                       L_NUM=const.L_NUM,
                                                                       ALPHA_NUM=const.ALPHA_NUM,
                                                                       LAM_LP=const.LAM_LP, LAM_ADV=const.LAM_ADV,
-                                                                      LAM_GDL=const.LAM_GDL, LAM_FLOW=const.LAM_FLOW)
+                                                                      LAM_GDL=const.LAM_GDL, LAM_FLOW=const.LAM_FLOW,
+                                                                             SPLT=const.SPLIT, TIME=time_str)
 
 if args.snapshot_dir:
     # if the snapshot_dir is model.ckpt-xxx, which means it is the single model for testing.
