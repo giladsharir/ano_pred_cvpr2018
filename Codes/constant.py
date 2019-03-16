@@ -102,6 +102,11 @@ if args.inverse_exp:
 else:
   const.INV_EXP = False
 
+if args.dataset == 'ntu':
+  const.NTU = True
+else:
+  const.NTU = False
+
 # network constants
 const.HEIGHT = 256
 const.WIDTH = 256
