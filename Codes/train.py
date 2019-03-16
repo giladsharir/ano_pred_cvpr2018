@@ -36,7 +36,7 @@ print(const)
 
 # define dataset
 with tf.name_scope('dataset'):
-    train_loader = DataLoader(train_folder, const.SPLIT, 'train', const.INV_EXP, resize_height=height,
+    train_loader = DataLoader(train_folder, const.SPLIT, 'train', const.INV_EXP, ntu=const.NTU, resize_height=height,
                               resize_width=width)
     train_dataset = train_loader(batch_size=batch_size, time_steps=num_his, num_pred=1)
 
