@@ -50,7 +50,7 @@ with tf.name_scope('dataset'):
     print('train inputs = {}'.format(train_inputs))
     print('train prediction gt = {}'.format(train_gt))
 
-    test_loader = DataLoader(test_folder, const.SPLIT, 'test', const.INV_EXP, resize_height=height, resize_width=width)
+    test_loader = DataLoader(test_folder, const.SPLIT, 'test', const.INV_EXP, ntu=const.NTU, resize_height=height, resize_width=width)
     test_dataset = test_loader(batch_size=batch_size, time_steps=num_his, num_pred=1)
     test_it = test_dataset.make_one_shot_iterator()
     test_videos_clips_tensor = test_it.get_next()
