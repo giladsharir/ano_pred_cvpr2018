@@ -61,7 +61,7 @@ def np_load_frame(frame, resize_height, resize_width):
 
 
 class DataLoader(object):
-    def __init__(self, video_folder, split, phase, inv_exp, ntu, resize_height=256, resize_width=256):
+    def __init__(self, video_folder, split, phase, inv_exp, ntu=False, resize_height=256, resize_width=256):
         self.dir = video_folder
         self.videos = OrderedDict()
         self._resize_height = resize_height
