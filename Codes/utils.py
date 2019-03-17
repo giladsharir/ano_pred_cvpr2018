@@ -61,7 +61,7 @@ def np_load_frame(frame, resize_height, resize_width):
 
 
 class DataLoader(object):
-    def __init__(self, video_folder, split, phase, inv_exp, resize_height=256, resize_width=256):
+    def __init__(self, video_folder, split, phase, inv_exp, ntu=False, resize_height=256, resize_width=256):
         self.dir = video_folder
         self.videos = OrderedDict()
         self._resize_height = resize_height
@@ -70,6 +70,7 @@ class DataLoader(object):
         self._phase = phase
 
         self._inv = inv_exp
+        self._ntu = ntu
         self.setup()
 
     def __call__(self, batch_size, time_steps, num_pred=1):
@@ -186,10 +187,10 @@ class DataLoader(object):
     def setup(self):
         # videos = glob.glob(os.path.join(self.dir, '*'))
         videos = []
-        normal_classes, abnorm_classes = get_exp_classes(self._split)
+        normal_classes, abnorm_classes = get_exp_classes(self._split, ntu=self._ntu)
         # c_names = [dir for dir in next(os.walk(self.dir))[1]]
 
-        c_names = get_kinetics_names()
+        c_names = get_kinetics_names(ntu=self._ntu)
 
         for c_idx, c_dir in enumerate(c_names):
             # if not os.path.isdir(os.path.join(self.dir, c_dir)):
